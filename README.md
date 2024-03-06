@@ -7,7 +7,7 @@ Useful scripts for use with aws-cli
 
 ## Suggested Installation
 
-To use this script from anywhere on your system, it's recommended to move it to a central location and then include that location in your system's `PATH`.
+To use these scripts from anywhere on your system, it's recommended to move it to a central location and then include that location in your system's `PATH`.
 
 ### Moving the Script
 
