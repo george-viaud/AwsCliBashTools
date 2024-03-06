@@ -1,4 +1,4 @@
-# AwsCliBashTools
+# Aws Cli Bash Tools
 Useful scripts for use with aws-cli
 
 ## Disclaimer
