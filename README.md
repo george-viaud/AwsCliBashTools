@@ -1,6 +1,10 @@
 # AwsCliBashTools
 Useful scripts for use with aws-cli
 
+## Disclaimer
+
+These scripts are provided "as-is," without warranty of any kind. Use of these scripts is at your own risk. The author is not responsible for any costs, damages, or service interruptions that may occur as a result of their use. Ensure you have proper backups and fully understand the impact of operations such as refreshing Auto Scaling Groups within your AWS environment. It is strongly recommended to test the scripts' functionality in a non-production environment before deploying them in production.
+
 ## Prerequisites
 - Ensure AWS CLI is installed and configured with the necessary permissions.
 - Ensure `jq` is installed for processing JSON data.
