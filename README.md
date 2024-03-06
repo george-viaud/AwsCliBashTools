@@ -30,7 +30,8 @@ source ~/.bashrc
 ***
 ## asg-refresh.sh
 
-A Bash script for easily triggering refresh actions on AWS Auto Scaling Groups (ASGs) via the command line, with support for filtering ASGs based on tags.
+A Bash script for easily triggering refresh actions on AWS Auto Scaling Groups (ASGs) via the command line, with support for filtering ASGs based on tags and optional AWS profile and region specification.
+
 ### Basic Usage
 Invoke the script with the `--tags` option followed by a comma-separated list of tag key-value pairs to filter the ASGs:
 
@@ -39,6 +40,15 @@ Invoke the script with the `--tags` option followed by a comma-separated list of
 ```
 
 This command will fetch all ASGs with the specified tags and ask to initiate a refresh action on them as a group.
+
+### Specifying AWS Profile and Region
+You can specify an AWS profile and region for commands that require it by using the `--profile` and `--region` options, respectively:
+
+```bash
+./asg-refresh.sh --tags="Environment=Production,App=Analytics" --profile your-profile --region us-west-2
+```
+
+Replace `your-profile` with your actual profile name and `us-west-2` with the desired AWS region.
 
 ### Individual-Match Confirmation
 To manually confirm each ASG refresh, use the `--ask-each` flag:
@@ -50,3 +60,4 @@ To manually confirm each ASG refresh, use the `--ask-each` flag:
 The script will prompt for confirmation for each individual ASG matched.
 
 ***
+

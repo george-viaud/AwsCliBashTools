@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script Name: Autoscaling Group Refresh
-# Description: Easy triggering of ASG refresh via cli
+# Description: Easy triggering of ASG refresh via CLI with optional AWS profile and region
 # https://github.com/george-viaud/AwsCliBashTools
 # Author: George Viaud
 # Year: 2024
@@ -16,7 +16,10 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Function to parse --tags and --ask-each arguments
+AWS_PROFILE=""
+AWS_REGION=""
+
+
 parse_args() {
     for arg in "$@"
     do
@@ -27,13 +30,19 @@ parse_args() {
             --ask-each)
             ASK_EACH=true
             ;;
+            --profile=*)
+            AWS_PROFILE="--profile ${arg#*=}"
+            ;;
+            --region=*)
+            AWS_REGION="--region ${arg#*=}"
+            ;;
         esac
     done
 }
 
 # Function to fetch ASGs based on provided tags and display their names
 fetch_and_display_asgs() {
-    echo -e "${BLUE}Fetching Auto Scaling Groups matching tags...${NC}"
+    echo -e "${BLUE}Fetching ASGs matching tags...${NC}"
 
     JQ_FILTER='.AutoScalingGroups[] | select('
     FIRST_TAG=true
@@ -50,7 +59,7 @@ fetch_and_display_asgs() {
     done
     JQ_FILTER+=') | .AutoScalingGroupName'
 
-    ASG_NAMES=$(aws autoscaling describe-auto-scaling-groups | jq -r "$JQ_FILTER")
+    ASG_NAMES=$(aws autoscaling describe-auto-scaling-groups $AWS_PROFILE $AWS_REGION | jq -r "$JQ_FILTER")
 
     if [ -z "$ASG_NAMES" ]; then
         echo -e "${RED}No matching ASGs found.${NC}"
@@ -66,6 +75,7 @@ start_instance_refresh() {
     echo -e "${YELLOW}Starting instance refresh for ASG: $1.${NC}"
     aws autoscaling start-instance-refresh --auto-scaling-group-name "$1" \
         --strategy "Rolling" \
+        $AWS_PROFILE $AWS_REGION \
         --preferences '{
             "MinHealthyPercentage": 100,
             "MaxHealthyPercentage": 110,
@@ -81,7 +91,7 @@ ASK_EACH=false
 parse_args "$@"
 
 if [ -z "$TAGS" ]; then
-    echo -e "${RED}Use: $SCRIPT_NAME --tags=\"Key1=Value1, ...\" [--ask-each] ${NC}"
+    echo -e "${RED}Use: $SCRIPT_NAME --tags=\"Key1=Value1, ...\" [--ask-each] [--profile=your-profile] [--region=your-region]${NC}"
     exit 1
 fi
 
