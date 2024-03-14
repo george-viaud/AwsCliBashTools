@@ -62,6 +62,20 @@ To manually confirm each ASG refresh, use the `--ask-each` flag:
 ```
 
 The script will prompt for confirmation for each individual ASG matched.
-
 ***
 
+## aws-route53-add-record.sh
+
+A Bash script designed to simplify the process of adding DNS records to AWS Route 53. This script is handy for managing DNS records programmatically without directly using the AWS Management Console or the AWS CLI's complex syntax.
+
+### Basic Usage
+To add a new DNS record, invoke the script with the domain name, record name, record type, and record value as arguments:
+
+```bash
+./aws-route53-add-record.sh <domain-name> <record-name> <record-type> <record-value>
+```
+
+Example - Adding a CNAME record:
+```bash
+./aws-route53-add-record.sh example.com www CNAME example.com
+```
