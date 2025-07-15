@@ -1,1 +1,8 @@
 /aws/
+
+# JetBrains IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+/route53_a_records.csv
