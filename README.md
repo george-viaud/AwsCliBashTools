@@ -79,3 +79,94 @@ Example - Adding a CNAME record:
 ```bash
 ./aws-route53-add-record.sh example.com www CNAME example.com
 ```
+
+***
+
+## aws-show-lt-versions.sh
+
+A Bash script that displays launch template information for all instances across all Auto Scaling Groups in your AWS account. This script is useful for auditing which launch template versions are currently in use by your ASG instances.
+
+### Basic Usage
+Simply run the script without any arguments:
+
+```bash
+./aws-show-lt-versions.sh
+```
+
+### What it does
+The script will:
+1. Fetch all Auto Scaling Groups in your AWS account
+2. Loop through each ASG and examine all instances within it
+3. Display the Launch Template ID and version for each instance
+4. Show instances that are not using launch templates
+
+### Example Output
+```
+Auto Scaling Group: my-production-asg
+  Instance ID: i-1234567890abcdef0
+    Launch Template ID: lt-1234567890abcdef0
+    Launch Template Version: 3
+  Instance ID: i-0987654321fedcba0 does not use a Launch Template.
+=====================================================
+```
+
+### Prerequisites
+- AWS CLI configured with permissions to:
+  - `autoscaling:DescribeAutoScalingGroups`
+  - `ec2:DescribeInstances`
+- `jq` installed for JSON processing
+
+***
+
+## route53-extract-all-a-records.sh
+
+A comprehensive Bash script that extracts all A-records from all Route 53 hosted zones in your AWS account and exports them to a CSV file. This script is useful for DNS auditing, migration planning, or creating backups of your DNS records.
+
+### Basic Usage
+Run the script without any arguments:
+
+```bash
+./route53-extract-all-a-records.sh
+```
+
+### What it does
+The script will:
+1. Fetch all hosted zones from your Route 53 account
+2. Extract all A-records from each zone (handles pagination automatically)
+3. Export the records to a CSV file named `route53_a_records.csv`
+4. Display a summary of records found and show the first 10 records
+
+### Output Format
+The generated CSV file contains three columns:
+- `base_domain`: The root domain (e.g., example.com)
+- `hostname`: The full hostname (e.g., www.example.com)
+- `ip_address`: The IP address the record points to
+
+### Example Output
+```
+========================================
+Export complete!
+Total A-records found: 25
+Output saved to: route53_a_records.csv
+========================================
+
+First 10 records in the CSV:
+base_domain   hostname           ip_address
+example.com   example.com        192.168.1.1
+example.com   www.example.com    192.168.1.1
+example.com   api.example.com    192.168.1.10
+```
+
+### Prerequisites
+- AWS CLI configured with permissions to:
+  - `route53:ListHostedZones`
+  - `route53:ListResourceRecordSets`
+- `jq` installed for JSON processing
+
+### Notes
+- The script handles pagination automatically for zones with many records
+- Root domain records and subdomains are both included
+- The output file `route53_a_records.csv` will be overwritten on each run
+- Only A-records are extracted (not AAAA, CNAME, MX, etc.)
+
+***
