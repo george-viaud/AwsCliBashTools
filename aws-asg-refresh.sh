@@ -36,6 +36,9 @@ parse_args() {
             --region=*)
             AWS_REGION="--region ${arg#*=}"
             ;;
+            --delay=*)
+            DELAY_SECONDS="${arg#*=}"
+            ;;
         esac
     done
 }
@@ -70,37 +73,61 @@ fetch_and_display_asgs() {
     echo "$ASG_NAMES"
 }
 
-# Function to start the instance refresh
+# Function to start the instance refresh (with retry on throttling)
 start_instance_refresh() {
-    echo -e "${YELLOW}Starting instance refresh for ASG: $1.${NC}"
-    aws autoscaling start-instance-refresh --auto-scaling-group-name "$1" \
-        --strategy "Rolling" \
-        $AWS_PROFILE $AWS_REGION \
-        --preferences '{
-            "MinHealthyPercentage": 100,
-            "MaxHealthyPercentage": 110,
-            "InstanceWarmup": 300
-        }'
-    echo -e "${GREEN}Instance refresh initiated for $1.${NC}"
+    local asg_name="$1"
+    local max_retries=5
+    local retry=0
+    local wait_sec=2
+
+    echo -e "${YELLOW}Starting instance refresh for ASG: $asg_name.${NC}"
+    while true; do
+        if output=$(aws autoscaling start-instance-refresh --auto-scaling-group-name "$asg_name" \
+            --strategy "Rolling" \
+            $AWS_PROFILE $AWS_REGION \
+            --preferences '{
+                "MinHealthyPercentage": 100,
+                "MaxHealthyPercentage": 110,
+                "InstanceWarmup": 300
+            }' 2>&1); then
+            echo "$output"
+            echo -e "${GREEN}Instance refresh initiated for $asg_name.${NC}"
+            return 0
+        fi
+        retry=$((retry + 1))
+        if [[ "$output" == *"Throttling"* ]] && [ $retry -lt $max_retries ]; then
+            echo -e "${YELLOW}Throttled (attempt $retry/$max_retries). Waiting ${wait_sec}s before retry...${NC}" >&2
+            sleep "$wait_sec"
+            wait_sec=$((wait_sec * 2))  # Exponential backoff: 2, 4, 8, 16...
+        else
+            echo -e "${RED}$output${NC}" >&2
+            echo -e "${RED}Instance refresh failed for $asg_name.${NC}" >&2
+            return 1
+        fi
+    done
 }
 
 # Main script logic starts here
 TAGS=""
 ASK_EACH=false
+DELAY_SECONDS=2   # Delay between StartInstanceRefresh calls to avoid AWS throttling
 
 parse_args "$@"
 
 if [ -z "$TAGS" ]; then
-    echo -e "${RED}Use: $SCRIPT_NAME --tags=\"Key1=Value1, ...\" [--ask-each] [--profile=your-profile] [--region=your-region]${NC}"
+    echo -e "${RED}Use: $SCRIPT_NAME --tags=\"Key1=Value1, ...\" [--ask-each] [--delay=N] [--profile=your-profile] [--region=your-region]${NC}"
     exit 1
 fi
 
 fetch_and_display_asgs
 
 if [ "$ASK_EACH" = true ]; then
+    first=true
     for ASG_NAME in $ASG_NAMES; do
         read -p "$(echo -e "${YELLOW}Proceed with instance refresh for $ASG_NAME? (y/N):${NC}") " confirm < /dev/tty
         if [[ $confirm == [yY] ]]; then
+            [ "$first" = true ] || { [ "$DELAY_SECONDS" -gt 0 ] && sleep "$DELAY_SECONDS"; }
+            first=false
             start_instance_refresh "$ASG_NAME"
         else
             echo -e "${RED}Skipped instance refresh for $ASG_NAME.${NC}"
@@ -109,7 +136,10 @@ if [ "$ASK_EACH" = true ]; then
 else
     read -p "$(echo -e "${YELLOW}Proceed with instance refresh for all above ASGs? (y/N):${NC}") " confirm_all < /dev/tty
     if [[ $confirm_all == [yY] ]]; then
+        first=true
         for ASG_NAME in $ASG_NAMES; do
+            [ "$first" = true ] || { [ "$DELAY_SECONDS" -gt 0 ] && sleep "$DELAY_SECONDS"; }
+            first=false
             start_instance_refresh "$ASG_NAME"
         done
     else
