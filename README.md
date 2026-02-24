@@ -62,6 +62,18 @@ To manually confirm each ASG refresh, use the `--ask-each` flag:
 ```
 
 The script will prompt for confirmation for each individual ASG matched.
+
+### Delay Between Refreshes
+By default, the script waits 2 seconds between each `StartInstanceRefresh` call to avoid AWS API throttling. You can adjust this with the `--delay` option:
+
+```bash
+./aws-asg-refresh.sh --tags="Environment=Production,App=Analytics" --delay=5
+```
+
+Set `--delay=0` to disable the delay entirely.
+
+### Throttling & Retry
+If AWS throttles a `StartInstanceRefresh` call, the script will automatically retry up to 5 times using exponential backoff (2s, 4s, 8s, 16s). Non-throttling errors fail immediately.
 ***
 
 ## aws-route53-add-record.sh
